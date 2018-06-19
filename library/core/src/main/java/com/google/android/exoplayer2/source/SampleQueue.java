@@ -16,6 +16,8 @@
 package com.google.android.exoplayer2.source;
 
 import android.support.annotation.Nullable;
+import android.util.Log;
+
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.FormatHolder;
@@ -149,6 +151,7 @@ public final class SampleQueue implements TrackOutput {
     totalBytesWritten = metadataQueue.discardUpstreamSamples(discardFromIndex);
     if (totalBytesWritten == 0 || totalBytesWritten == firstAllocationNode.startPosition) {
       clearAllocationNodes(firstAllocationNode);
+      Log.d("Exoplayer", "New node created in discard stream");
       firstAllocationNode = new AllocationNode(totalBytesWritten, allocationLength);
       readAllocationNode = firstAllocationNode;
       writeAllocationNode = firstAllocationNode;
@@ -162,6 +165,7 @@ public final class SampleQueue implements TrackOutput {
       AllocationNode firstNodeToDiscard = lastNodeToKeep.next;
       clearAllocationNodes(firstNodeToDiscard);
       // Reset the successor of the last node to be an uninitialized node.
+      Log.d("Exoplayer", "New allocation node, normal (start pos: " + lastNodeToKeep.endPosition);
       lastNodeToKeep.next = new AllocationNode(lastNodeToKeep.endPosition, allocationLength);
       // Update writeAllocationNode and readAllocationNode as necessary.
       writeAllocationNode = totalBytesWritten == lastNodeToKeep.endPosition ? lastNodeToKeep.next
@@ -602,10 +606,14 @@ public final class SampleQueue implements TrackOutput {
         + ((int) (writeAllocationNode.startPosition - fromNode.startPosition) / allocationLength);
     Allocation[] allocationsToRelease = new Allocation[allocationCount];
     AllocationNode currentNode = fromNode;
+    long startPos = fromNode.startPosition;
     for (int i = 0; i < allocationsToRelease.length; i++) {
       allocationsToRelease[i] = currentNode.allocation;
       currentNode = currentNode.clear();
     }
+    long endPos = currentNode.endPosition;
+    long totalBytes = endPos - startPos;
+    Log.d("Exoplayer", "Deallocating " + startPos + " to " + endPos + ", totalling " + totalBytes + " bytes");
     allocator.release(allocationsToRelease);
   }
 
